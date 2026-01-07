@@ -67,7 +67,9 @@ defmodule BB.Reactor.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:bb, bb_dep("~> 0.12")},
+      {:bb, bb_dep("~> 0.13")},
+      {:reactor, "~> 0.17"},
+      {:spark, "~> 2.3"},
 
       # dev/test
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
