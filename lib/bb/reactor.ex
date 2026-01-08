@@ -6,8 +6,9 @@ defmodule BB.Reactor do
   @moduledoc """
   Spark DSL extension for integrating Reactor with BB robotics framework.
 
-  This extension provides `command` and `wait_for_event` entities that simplify
-  building robot operation sequences with proper safety handling and compensation.
+  This extension provides `command`, `wait_for_event`, and `wait_for_state`
+  entities that simplify building robot operation sequences with proper safety
+  handling and compensation.
 
   ## Usage
 
@@ -51,12 +52,14 @@ defmodule BB.Reactor do
 
   - `command` - Execute a BB command with safety handling and compensation support
   - `wait_for_event` - Wait for a PubSub event matching a pattern
+  - `wait_for_state` - Wait for the robot to reach a specific state
   """
 
   alias BB.Reactor.Dsl
 
   @command Dsl.Command.__entity__()
   @wait_for_event Dsl.WaitForEvent.__entity__()
+  @wait_for_state Dsl.WaitForState.__entity__()
 
   use Spark.Dsl.Extension,
     sections: [],
@@ -69,6 +72,10 @@ defmodule BB.Reactor do
       %Spark.Dsl.Patch.AddEntity{
         section_path: [:reactor],
         entity: @wait_for_event
+      },
+      %Spark.Dsl.Patch.AddEntity{
+        section_path: [:reactor],
+        entity: @wait_for_state
       }
     ]
 end

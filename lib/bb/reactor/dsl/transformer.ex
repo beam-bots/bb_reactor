@@ -10,13 +10,15 @@ defmodule BB.Reactor.Dsl.Transformer do
   alias BB.Reactor.Middleware.Context, as: ContextMiddleware
   alias Spark.Dsl.Transformer
 
+  @required_middlewares [ContextMiddleware]
+
   @impl true
   def before?(Reactor.Dsl.Transformer), do: true
   def before?(_), do: false
 
   @impl true
   def transform(dsl_state) do
-    middlewares =
+    existing_middlewares =
       dsl_state
       |> Transformer.get_entities([:reactor, :middlewares])
       |> Enum.map(fn
@@ -24,15 +26,20 @@ defmodule BB.Reactor.Dsl.Transformer do
         other -> other
       end)
 
-    if ContextMiddleware in middlewares do
-      {:ok, dsl_state}
-    else
-      middleware_entity = %Reactor.Dsl.Middleware{
-        __identifier__: ContextMiddleware,
-        module: ContextMiddleware
-      }
+    dsl_state =
+      Enum.reduce(@required_middlewares, dsl_state, fn middleware, acc ->
+        if middleware in existing_middlewares do
+          acc
+        else
+          entity = %Reactor.Dsl.Middleware{
+            __identifier__: middleware,
+            module: middleware
+          }
 
-      {:ok, Transformer.add_entity(dsl_state, [:reactor, :middlewares], middleware_entity)}
-    end
+          Transformer.add_entity(acc, [:reactor, :middlewares], entity)
+        end
+      end)
+
+    {:ok, dsl_state}
   end
 end

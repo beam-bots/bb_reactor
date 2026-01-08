@@ -74,6 +74,18 @@ defmodule BB.ReactorTest do
     return(:wait_for_position)
   end
 
+  defmodule WaitForIdleReactor do
+    @moduledoc false
+    use Reactor, extensions: [BB.Reactor]
+
+    wait_for_state :wait_for_idle do
+      states([:idle])
+      timeout(2000)
+    end
+
+    return(:wait_for_idle)
+  end
+
   setup do
     start_supervised!({TestRobot, simulation: :kinematic})
 
@@ -146,6 +158,15 @@ defmodule BB.ReactorTest do
       {:ok, result} = Task.await(task, 2000)
 
       assert result.payload.positions == [1.0]
+    end
+  end
+
+  describe "wait_for_state entity" do
+    test "waits for robot state" do
+      {:ok, result} =
+        Reactor.run(WaitForIdleReactor, %{}, %{private: %{bb_robot: TestRobot}})
+
+      assert result == :idle
     end
   end
 
