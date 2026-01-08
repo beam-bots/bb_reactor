@@ -4,4 +4,6 @@
 
 Application.ensure_all_started(:mimic)
 
+Mimic.copy(BB.Safety)
+
 ExUnit.start()

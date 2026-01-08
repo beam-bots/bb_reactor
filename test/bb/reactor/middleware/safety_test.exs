@@ -4,9 +4,12 @@
 
 defmodule BB.Reactor.Middleware.SafetyTest do
   use ExUnit.Case, async: false
+  use Mimic
 
   alias BB.Reactor.Middleware.Safety
   alias BB.Reactor.TestRobot
+
+  setup :set_mimic_global
 
   setup do
     start_supervised!({TestRobot, simulation: :kinematic})
@@ -19,6 +22,13 @@ defmodule BB.Reactor.Middleware.SafetyTest do
 
   describe "error/2" do
     test "reports error to BB.Safety" do
+      expect(BB.Safety, :report_error, fn robot, path, err ->
+        assert robot == TestRobot
+        assert path == [:reactor, TestErrorReactor]
+        assert %RuntimeError{message: "test error"} = err
+        :ok
+      end)
+
       context = %{
         private: %{bb_robot: TestRobot},
         __reactor__: %{id: TestErrorReactor}
