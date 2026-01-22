@@ -42,7 +42,8 @@ defmodule BB.Reactor.TestRobot do
 
     command :disarm do
       handler(BB.Command.Disarm)
-      allowed_states([:idle, :executing])
+      allowed_states(:*)
+      cancel(:*)
     end
 
     command :test_succeed do
