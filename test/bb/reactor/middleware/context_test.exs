@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 defmodule BB.Reactor.Middleware.ContextTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias BB.Reactor.Context
   alias BB.Reactor.Middleware.Context, as: ContextMiddleware

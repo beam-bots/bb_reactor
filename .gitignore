@@ -26,3 +26,6 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 bb_reactor-*.tar
 
+# Claude Code local settings
+/.claude/
+
