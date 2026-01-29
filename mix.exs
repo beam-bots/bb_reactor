@@ -68,7 +68,7 @@ defmodule BB.Reactor.MixProject do
   defp deps do
     [
       {:bb, bb_dep("~> 0.13")},
-      {:reactor, "~> 0.17"},
+      {:reactor, "~> 1.0"},
       {:spark, "~> 2.3"},
 
       # dev/test
