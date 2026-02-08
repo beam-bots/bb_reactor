@@ -11,6 +11,17 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.2.1](https://github.com/beam-bots/bb_reactor/compare/v0.2.0...v0.2.1) (2026-02-08)
+
+
+
+
+### Bug Fixes:
+
+* update for bb 0.15.0 compatibility by James Harton
+
+* update TestRobot disarm command for bb 0.15.0 by James Harton
+
 ## [v0.2.0](https://github.com/beam-bots/bb_reactor/compare/v0.1.0...v0.2.0) (2026-01-08)
 
 
