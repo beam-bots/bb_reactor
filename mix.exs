@@ -9,7 +9,7 @@ defmodule BB.Reactor.MixProject do
   Behaviour trees for Beam Bots robots using Reactor.
   """
 
-  @version "0.2.1"
+  @version "0.2.2"
 
   def project do
     [
