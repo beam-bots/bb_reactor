@@ -4,14 +4,25 @@
 
 defmodule BB.Reactor.Middleware.Safety do
   @moduledoc """
-  Middleware that integrates BB safety system with Reactor execution.
+  Middleware that bridges reactor errors to the BB safety event stream.
 
-  When a reactor fails (returns an error), this middleware reports the error
-  to `BB.Safety.report_error/3`. This allows the robot's `auto_disarm_on_error`
-  configuration to control whether the robot should be automatically disarmed.
+  When a reactor fails (returns an error), this middleware publishes the
+  error via `BB.Safety.report_error/3`. The result is a
+  `BB.Safety.HardwareError` message on `[:safety, :error]` that observers
+  (dashboards, alerting, custom recovery logic) can subscribe to.
 
-  This middleware is **not** automatically added by the `BB.Reactor` extension.
-  Add it manually if you want reactor errors to trigger the safety system.
+  This middleware does **not** disarm the robot or otherwise change safety
+  state. Escalation in BB happens through the supervision tree: if a process
+  crashes often enough to exhaust the topology supervisor's restart budget,
+  the safety controller force-disarms the robot. Reactor errors are
+  recovered at the saga level (compensation, retries) and do not crash
+  processes, so they will not trigger escalation on their own. If a
+  particular reactor failure warrants disarm, subscribe to `[:safety, :error]`
+  and call `BB.Safety.disarm/1` explicitly.
+
+  This middleware is **not** automatically added by the `BB.Reactor`
+  extension - add it manually if you want reactor errors published as
+  hardware error events.
 
   ## Usage
 
@@ -27,12 +38,12 @@ defmodule BB.Reactor.Middleware.Safety do
   end
   ```
 
-  ## Safety State Changes
+  ## Safety State Changes Within Steps
 
   Individual steps (like `BB.Reactor.Step.Command`) are responsible for
   detecting safety state changes during execution and returning
-  `{:halt, :safety_disarmed}` when appropriate. This middleware focuses
-  on reporting reactor-level errors to the safety system.
+  `{:halt, :safety_disarmed}` when appropriate. This middleware only
+  publishes notifications for reactor-level errors.
   """
 
   use Reactor.Middleware
