@@ -118,7 +118,7 @@ end
 
 ## Safety Integration
 
-The `BB.Reactor.Middleware.Safety` middleware can be added to report reactor errors to the BB safety system:
+The `BB.Reactor.Middleware.Safety` middleware can be added to publish reactor errors as `BB.Safety.HardwareError` events on `[:safety, :error]`:
 
 ```elixir
 defmodule MyRobot.SafeReactor do
@@ -132,7 +132,7 @@ defmodule MyRobot.SafeReactor do
 end
 ```
 
-This allows the robot's `auto_disarm_on_error` configuration to control whether errors trigger automatic disarm.
+This is a notification bridge - the middleware does not change safety state. Subscribers to `[:safety, :error]` can implement custom alerting or recovery (including calling `BB.Safety.disarm/1` when appropriate). BB's own force-disarm path is driven by the topology supervisor's restart budget, not by reactor errors.
 
 ## Documentation
 

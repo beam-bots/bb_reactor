@@ -67,7 +67,7 @@ defmodule BB.Reactor.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:bb, bb_dep("~> 0.13")},
+      {:bb, bb_dep("~> 0.16")},
       {:reactor, "~> 1.0"},
       {:spark, "~> 2.3"},
 
