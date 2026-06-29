@@ -99,42 +99,15 @@ defmodule BB.Reactor.Step.Command do
 
   defp do_await(cmd_pid, ref, result_base, :infinity) do
     receive do
-      {:DOWN, ^ref, :process, ^cmd_pid, :disarmed} ->
-        {:halt, :safety_disarmed}
-
-      {:DOWN, ^ref, :process, ^cmd_pid, :cancelled} ->
-        {:error, :cancelled}
-
-      {:DOWN, ^ref, :process, ^cmd_pid, :normal} ->
-        handle_normal_exit(cmd_pid, result_base)
-
-      {:DOWN, ^ref, :process, ^cmd_pid, :noproc} ->
-        # Process was already dead when we monitored - it likely completed
-        # successfully before we could monitor. Check the result cache.
-        handle_normal_exit(cmd_pid, result_base)
-
       {:DOWN, ^ref, :process, ^cmd_pid, reason} ->
-        {:error, {:command_crashed, reason}}
+        handle_down(reason, cmd_pid, result_base)
     end
   end
 
   defp do_await(cmd_pid, ref, result_base, timeout) when is_integer(timeout) do
     receive do
-      {:DOWN, ^ref, :process, ^cmd_pid, :disarmed} ->
-        {:halt, :safety_disarmed}
-
-      {:DOWN, ^ref, :process, ^cmd_pid, :cancelled} ->
-        {:error, :cancelled}
-
-      {:DOWN, ^ref, :process, ^cmd_pid, :normal} ->
-        handle_normal_exit(cmd_pid, result_base)
-
-      {:DOWN, ^ref, :process, ^cmd_pid, :noproc} ->
-        # Process was already dead when we monitored - check the result cache
-        handle_normal_exit(cmd_pid, result_base)
-
       {:DOWN, ^ref, :process, ^cmd_pid, reason} ->
-        {:error, {:command_crashed, reason}}
+        handle_down(reason, cmd_pid, result_base)
     after
       timeout ->
         Process.demonitor(ref, [:flush])
@@ -142,6 +115,30 @@ defmodule BB.Reactor.Step.Command do
         {:error, :timeout}
     end
   end
+
+  # Commands stop with `{:shutdown, reason}` for graceful, intentional stops
+  # (cancellation, safety disarm) so they aren't logged as crashes; older `bb`
+  # releases used the bare reason atom. Unwrap so either form is handled.
+  # `:noproc` means the process was already dead when we monitored — treat it
+  # like a normal exit and look up the cached result.
+  defp handle_down(reason, cmd_pid, result_base) do
+    case unwrap_shutdown(reason) do
+      :disarmed ->
+        {:halt, :safety_disarmed}
+
+      :cancelled ->
+        {:error, :cancelled}
+
+      exit_reason when exit_reason in [:normal, :noproc] ->
+        handle_normal_exit(cmd_pid, result_base)
+
+      _other ->
+        {:error, {:command_crashed, reason}}
+    end
+  end
+
+  defp unwrap_shutdown({:shutdown, reason}), do: reason
+  defp unwrap_shutdown(reason), do: reason
 
   defp handle_normal_exit(cmd_pid, result_base) do
     case ResultCache.fetch_and_delete(cmd_pid) do
