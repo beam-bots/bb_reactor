@@ -56,8 +56,8 @@ defmodule BB.Reactor.TestRobot do
       allowed_states([:idle])
     end
 
-    command :test_slow do
-      handler(BB.Reactor.TestCommands.Slow)
+    command :test_hang do
+      handler(BB.Reactor.TestCommands.Hang)
       allowed_states([:idle])
     end
 
@@ -98,29 +98,19 @@ defmodule BB.Reactor.TestCommands.Fail do
   def result(_state), do: {:error, :no_result}
 end
 
-defmodule BB.Reactor.TestCommands.Slow do
+defmodule BB.Reactor.TestCommands.Hang do
   @moduledoc false
   use BB.Command
 
   @impl BB.Command
-  def handle_command(goal, _context, state) do
-    delay = Map.get(goal, :delay, 5000)
-    value = Map.get(goal, :value, :slow_success)
-    Process.send_after(self(), :complete, delay)
-    {:noreply, Map.put(state, :value, value)}
-  end
-
-  @impl BB.Command
-  def handle_info(:complete, state) do
-    {:stop, :normal, Map.put(state, :result, {:ok, state.value})}
-  end
-
-  def handle_info(_other, state) do
+  def handle_command(%{notify: pid}, _context, state) do
+    send(pid, {:command_started, self()})
     {:noreply, state}
   end
 
+  def handle_command(_goal, _context, state), do: {:noreply, state}
+
   @impl BB.Command
-  def result(%{result: result}) when result != nil, do: result
   def result(_state), do: {:error, :cancelled}
 end
 
