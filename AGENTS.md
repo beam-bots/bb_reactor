@@ -94,7 +94,7 @@ Each DSL entity has:
 
 Tests use `BB.Reactor.TestRobot` from `test/support/test_robot.ex` which provides:
 - Simulation mode (`:kinematic`)
-- Test commands (`:test_succeed`, `:test_fail`, `:test_slow`)
+- Test commands (`:test_succeed`, `:test_fail`, `:test_hang`)
 
 ## Licensing headers
 

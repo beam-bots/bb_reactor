@@ -4,6 +4,9 @@
 
 defmodule BB.Reactor.Step.WaitForStateTest do
   use ExUnit.Case, async: false
+  use Mimic
+
+  import BB.Reactor.SubscribeNotifier
 
   alias BB.Reactor.Middleware.Context, as: ContextMiddleware
   alias BB.Reactor.Step.WaitForState
@@ -54,6 +57,8 @@ defmodule BB.Reactor.Step.WaitForStateTest do
     return(:wait_timeout)
   end
 
+  setup :set_mimic_global
+
   setup do
     start_supervised!({TestRobot, simulation: :kinematic})
     :ok
@@ -71,12 +76,14 @@ defmodule BB.Reactor.Step.WaitForStateTest do
     end
 
     test "waits for state transition" do
+      notify_on_subscribe()
+
       task =
         Task.async(fn ->
           Reactor.run(WaitForIdleReactor, %{}, %{private: %{bb_robot: TestRobot}})
         end)
 
-      Process.sleep(50)
+      assert_receive {:subscribed, [:state_machine]}, 1_000
 
       {:ok, cmd} = TestRobot.arm(%{})
       {:ok, :armed, _} = BB.Command.await(cmd)

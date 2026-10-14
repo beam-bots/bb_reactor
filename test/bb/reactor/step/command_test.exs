@@ -59,8 +59,7 @@ defmodule BB.Reactor.Step.CommandTest do
     end
 
     step :do_command do
-      impl({Command, command: :test_slow, timeout: 50})
-      argument(:delay, value(1000))
+      impl({Command, command: :test_hang, timeout: 50})
     end
 
     return(:do_command)
@@ -112,23 +111,28 @@ defmodule BB.Reactor.Step.CommandTest do
         middleware(ContextMiddleware)
       end
 
-      step :slow_command do
-        impl({Command, command: :test_slow})
-        argument(:delay, value(500))
+      input(:notify)
+
+      step :hanging_command do
+        impl({Command, command: :test_hang})
+        argument(:notify, input(:notify))
       end
 
-      return(:slow_command)
+      return(:hanging_command)
     end
 
     test "stops reactor when command is disarmed" do
       # Start the reactor in a task so we can disarm while it runs
+      test_pid = self()
+
       task =
         Task.async(fn ->
-          Reactor.run(DisarmDuringCommandReactor, %{}, %{private: %{bb_robot: TestRobot}})
+          Reactor.run(DisarmDuringCommandReactor, %{notify: test_pid}, %{
+            private: %{bb_robot: TestRobot}
+          })
         end)
 
-      # Give the command time to start
-      Process.sleep(50)
+      assert_receive {:command_started, _command}, 1_000
 
       # Disarm the robot - this cancels the running command
       {:ok, disarm_cmd} = TestRobot.disarm(%{})

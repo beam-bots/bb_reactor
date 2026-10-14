@@ -4,6 +4,9 @@
 
 defmodule BB.ReactorTest do
   use ExUnit.Case, async: false
+  use Mimic
+
+  import BB.Reactor.SubscribeNotifier
 
   alias BB.Message.Sensor.JointState
   alias BB.Reactor.Step.Command.Result
@@ -86,6 +89,8 @@ defmodule BB.ReactorTest do
     return(:wait_for_idle)
   end
 
+  setup :set_mimic_global
+
   setup do
     start_supervised!({TestRobot, simulation: :kinematic})
 
@@ -123,12 +128,14 @@ defmodule BB.ReactorTest do
 
   describe "wait_for_event entity" do
     test "waits for PubSub event" do
+      notify_on_subscribe()
+
       task =
         Task.async(fn ->
           Reactor.run(WaitForEventReactor, %{}, %{private: %{bb_robot: TestRobot}})
         end)
 
-      Process.sleep(50)
+      assert_receive {:subscribed, [:sensor]}, 1_000
 
       {:ok, message} = JointState.new(:joint1, names: [:joint1], positions: [0.5])
       BB.PubSub.publish(TestRobot, [:sensor, :joint1], message)
@@ -140,17 +147,17 @@ defmodule BB.ReactorTest do
     end
 
     test "applies filter function" do
+      notify_on_subscribe()
+
       task =
         Task.async(fn ->
           Reactor.run(FilteredEventReactor, %{}, %{private: %{bb_robot: TestRobot}})
         end)
 
-      Process.sleep(50)
+      assert_receive {:subscribed, [:sensor]}, 1_000
 
       {:ok, msg1} = JointState.new(:joint1, names: [:joint1], positions: [])
       BB.PubSub.publish(TestRobot, [:sensor, :joint1], msg1)
-
-      Process.sleep(20)
 
       {:ok, msg2} = JointState.new(:joint1, names: [:joint1], positions: [1.0])
       BB.PubSub.publish(TestRobot, [:sensor, :joint1], msg2)

@@ -4,6 +4,9 @@
 
 defmodule BB.Reactor.Step.WaitForEventTest do
   use ExUnit.Case, async: false
+  use Mimic
+
+  import BB.Reactor.SubscribeNotifier
 
   alias BB.Message.Sensor.JointState
   alias BB.Reactor.Middleware.Context, as: ContextMiddleware
@@ -75,8 +78,11 @@ defmodule BB.Reactor.Step.WaitForEventTest do
     return(:wait_timeout)
   end
 
+  setup :set_mimic_global
+
   setup do
     start_supervised!({TestRobot, simulation: :kinematic})
+    notify_on_subscribe()
     :ok
   end
 
@@ -88,8 +94,7 @@ defmodule BB.Reactor.Step.WaitForEventTest do
           Reactor.run(BasicWaitReactor, %{}, %{private: %{bb_robot: TestRobot}})
         end)
 
-      # Give the reactor time to subscribe
-      Process.sleep(50)
+      assert_receive {:subscribed, [:sensor]}, 1_000
 
       # Publish a message
       {:ok, message} = JointState.new(:joint1, names: [:joint1], positions: [0.5])
@@ -109,14 +114,11 @@ defmodule BB.Reactor.Step.WaitForEventTest do
           Reactor.run(FilteredWaitReactor, %{}, %{private: %{bb_robot: TestRobot}})
         end)
 
-      Process.sleep(50)
+      assert_receive {:subscribed, [:sensor]}, 1_000
 
       # Publish a message that doesn't match filter (empty positions)
       {:ok, msg1} = JointState.new(:joint1, names: [:joint1], positions: [])
       BB.PubSub.publish(TestRobot, [:sensor, :joint1], msg1)
-
-      # Should not match - reactor still waiting
-      Process.sleep(20)
 
       # Publish a message that matches filter
       {:ok, msg2} = JointState.new(:joint1, names: [:joint1], positions: [1.0])
@@ -141,7 +143,7 @@ defmodule BB.Reactor.Step.WaitForEventTest do
           Reactor.run(MessageTypesReactor, %{}, %{private: %{bb_robot: TestRobot}})
         end)
 
-      Process.sleep(50)
+      assert_receive {:subscribed, [:sensor]}, 1_000
 
       # Publish a JointState message
       {:ok, message} = JointState.new(:joint1, names: [:joint1], positions: [0.0])
